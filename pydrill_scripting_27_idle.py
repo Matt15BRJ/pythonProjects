@@ -6,6 +6,9 @@ import os
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
+import sqlite3
+import pydrill_gui_34_idle
+import pydrill_table_34_idle
 
 #source="C:\\Users\\Owner\Desktop\\File Alpha\\"#source file path
 #destination="C:\\Users\\Owner\Desktop\\File Bravo\\"#destination file path
@@ -17,8 +20,16 @@ from tkinter import messagebox
 
 
 def check_for_updated_files(self):
-    now=datetime.now()#get current time
-    unix=time.mktime(now.timetuple())#change current time to unix time
+    now=datetime.now()#get current time to create the time of this check
+    print(now)
+    conn=sqlite3.connect('filemover.db')
+    with conn:
+        cur=conn.cursor()
+        cur.execute("""SELECT max(col_fileCheck) FROM tbl_filemover""")
+        lastCheck=cur.fetchone()[0]
+    conn.close()
+    print(lastCheck)
+    unix=time.mktime(now.timetuple())#change this checks time to unix time to be stored as the new lastCheck
     source=self.txt_choose.get()
     destination=self.txt_dest.get()
     print('source{}'.format(source))
@@ -33,7 +44,7 @@ def check_for_updated_files(self):
                     #print(fileName)#for development
                     
             
-                if (unix - fileTime) < 86400:#compare current time to when file was last modified. If modified within last 24hrs(86400 secs) move it to new loc 
+                if fileTime >= lastCheck:#(unix - fileTime) < 86400:#compare current time to when file was last modified. If modified within last 24hrs(86400 secs) move it to new loc 
                     shutil.move(source+'/'+f, destination)
                     self.txt_moved.insert(1.0, fileName+ '\n')
                     
@@ -43,9 +54,10 @@ def check_for_updated_files(self):
 #           #create a label at the bottom that shows how many files were moved
             numMoved=int(self.txt_moved.index('end').split('.')[0])-2
             self.lbl_numMoved=ttk.Label(self.master, text='Number of Files Moved: {}'.format(numMoved))
-            self.lbl_numMoved.grid(row=6,column=0, padx=(15,0), pady=(5,5), sticky='w')
+            self.lbl_numMoved.grid(row=4,column=1, padx=(0,15), pady=(5,0), sticky='e')
             self.txt_choose.delete(0,'end')
             self.txt_dest.delete(0,'end')
+            pydrill_table_34_idle.add_to_filemover(self,unix,now)
         else:
             messagebox.showinfo("Cancel Request","No changes will be made")
 
